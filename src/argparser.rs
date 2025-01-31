@@ -1,4 +1,4 @@
-use crate::forecast::args::ForecastArgs;
+use crate::forecast::forecastargs::ForecastArgs;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]

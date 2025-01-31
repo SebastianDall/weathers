@@ -1,18 +1,12 @@
+use anyhow::Result;
+use reqwest;
+pub mod forecastargs;
 
+pub use forecastargs::ForecastArgs;
 
-
-
-
-
-
-
-pub fn forecast(args: ForecastArgs) -> Result<()> {
-    let body = reqwest::get("https://google.com")
-        .await?
-        .text()
-        .await?;
+pub async fn forecast(args: ForecastArgs) -> Result<()> {
+    let body = reqwest::get("https://google.com").await?.text().await?;
     println!("body: {body:?}");
 
     Ok(())
-    
 }
