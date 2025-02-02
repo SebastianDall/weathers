@@ -1,4 +1,6 @@
-use anyhow::{anyhow, Result};
+use std::str::FromStr;
+
+use anyhow::{anyhow, Context, Result};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Longitude(f64);
@@ -43,8 +45,8 @@ impl Latitude {
 /// - Maximum 4 decimals
 #[derive(Debug, Clone, PartialEq)]
 pub struct Coordinates {
-    pub longitude: Longitude,
     pub latitude: Latitude,
+    pub longitude: Longitude,
 }
 
 impl Coordinates {
@@ -54,15 +56,37 @@ impl Coordinates {
     /// use weathers::domain::{Coordinates};
     ///
     /// let coord = Coordinates::new(60, 0.0).unwrap();
-    /// assert_eq!(coord.longitude.value(), 60.0);
+    /// assert_eq!(coord.latitude.value(), 60.0);
     /// ```
-    pub fn new<L: Into<f64>, T: Into<f64>>(lon: L, lat: T) -> Result<Self> {
-        let lon = lon.into();
+    pub fn new<L: Into<f64>, T: Into<f64>>(lat: L, lon: T) -> Result<Self> {
         let lat = lat.into();
+        let lon = lon.into();
         Ok(Self {
             latitude: Latitude::new(lat)?,
             longitude: Longitude::new(lon)?,
         })
+    }
+}
+impl FromStr for Coordinates {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> anyhow::Result<Self> {
+        let parts: Vec<&str> = s.split(",").collect();
+
+        if parts.len() != 2 {
+            return Err(anyhow!(
+                "Invalid coordinates {}. Coordinates must be in the format 'lat,lon' (e.g. 60.1234,10.5678)", s.to_string()
+            ));
+        }
+
+        let lat: f64 = parts[0]
+            .parse()
+            .context("Latitude could not be parsed to float.")?;
+        let lon: f64 = parts[1]
+            .parse()
+            .context("Longitude could not be parsed to float.")?;
+
+        Coordinates::new(lat, lon).context("Error creating coordinates.")
     }
 }
 
@@ -105,7 +129,7 @@ mod tests {
     #[test]
     fn test_decimal_rounding() {
         let coord = Coordinates::new(60.10002, 51.00056).unwrap();
-        assert_eq!(coord.longitude.value(), 60.1000);
-        assert_eq!(coord.latitude.value(), 51.0006);
+        assert_eq!(coord.latitude.value(), 60.1000);
+        assert_eq!(coord.longitude.value(), 51.0006);
     }
 }
