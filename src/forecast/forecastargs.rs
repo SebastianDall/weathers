@@ -7,7 +7,7 @@ pub struct ForecastArgs {
         short,
         long,
         required = true,
-        help = "Coordinates to request weather data"
+        help = "Coordinates to request weather data 'lat,lon'"
     )]
     pub coordinates: Coordinates,
 }
