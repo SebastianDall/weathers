@@ -1,14 +1,25 @@
 use anyhow::{Context, Result};
 use log::info;
-// use reqwest;
+use reqwest;
+use url::Url;
 
 pub mod forecastargs;
 pub use forecastargs::ForecastArgs;
 
 pub async fn forecast(args: ForecastArgs) -> Result<()> {
     info!("Requested coordinates are: {:?}", args.coordinates);
-    // let body = reqwest::get("https://google.com").await?.text().await?;
-    // println!("body: {body:?}");
 
+    let mut base_url = Url::parse("https://api.met.no/weatherapi/locationforecast/2.0/")?;
+
+    base_url
+        .query_pairs_mut()
+        .append_pair("lat", &args.coordinates.latitude.value)
+        .append_pair("lon", &args.coordinates.longitude.value);
+
+    let sitename = "weathers/0.1.0 (https://github.com/SebastianDall/weathers)";
+    let client = reqwest::Client::new();
+    client.get(base_url).header("User-Agent", sitename);
+
+    println!("body: {body:?}");
     Ok(())
 }
