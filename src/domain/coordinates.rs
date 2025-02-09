@@ -22,7 +22,7 @@ impl Longitude {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct Latitude(f64);
 
 impl Latitude {
@@ -40,35 +40,54 @@ impl Latitude {
     }
 }
 
-/// A domain type representing latitude/longitude coordinates.
-///
-/// # Constraints
-/// - Maximum 4 decimals
-#[derive(Debug, Clone, PartialEq)]
-pub struct Coordinates {
-    pub latitude: Latitude,
-    pub longitude: Longitude,
+/// Altitude tuple struct.
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+pub struct Altitude(f64);
+
+impl Altitude {
+    pub fn new(value: f64) -> Result<Self> {
+        if value < -500.0 || value > 9000.0 {
+            return Err(anyhow!("Altitude outside of realistic range"));
+        }
+
+        Ok(Self(value))
+    }
 }
 
-impl Coordinates {
-    /// Create new coordinate
+/// Struct for representing geo-coordinates.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct LonLatAlt {
+    pub longitude: Longitude,
+    pub latitude: Latitude,
+    /// Optional altitude in meters
+    pub altitude: Option<Altitude>,
+}
+
+impl LonLatAlt {
+    /// Create new LonLatAlt Coordinates
     ///
     /// ```
-    /// use weathers::domain::{Coordinates};
+    /// use weathers::domain::{LonLatAlt};
     ///
-    /// let coord = Coordinates::new(60, 0.0).unwrap();
+    /// let coord = LonLat::new(0.0, 60, None).unwrap();
     /// assert_eq!(coord.latitude.value(), 60.0);
     /// ```
-    pub fn new<L: Into<f64>, T: Into<f64>>(lat: L, lon: T) -> Result<Self> {
+    pub fn new<L, T>(lon: L, lat: T, alt: Option<f64>) -> Result<Self>
+    where
+        L: Into<f64>,
+        T: Into<f64>,
+    {
         let lat = lat.into();
         let lon = lon.into();
         Ok(Self {
             latitude: Latitude::new(lat)?,
             longitude: Longitude::new(lon)?,
+            altitude: alt.map(|meters| Altitude::new(meters)).transpose()?,
         })
     }
 }
-impl FromStr for Coordinates {
+
+impl FromStr for LonLatAlt {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> anyhow::Result<Self> {
@@ -80,14 +99,14 @@ impl FromStr for Coordinates {
             ));
         }
 
-        let lat: f64 = parts[0]
-            .parse()
-            .context("Latitude could not be parsed to float.")?;
-        let lon: f64 = parts[1]
+        let lon: f64 = parts[0]
             .parse()
             .context("Longitude could not be parsed to float.")?;
+        let lat: f64 = parts[1]
+            .parse()
+            .context("Latitude could not be parsed to float.")?;
 
-        Coordinates::new(lat, lon).context("Error creating coordinates.")
+        LonLatAlt::new(lat, lon, None).context("Error creating coordinates.")
     }
 }
 
@@ -95,7 +114,7 @@ impl FromStr for Coordinates {
 mod tests {
     use crate::domain::coordinates::Latitude;
 
-    use super::{Coordinates, Longitude};
+    use super::{LonLatAlt, Longitude};
 
     #[test]
     fn test_boundary_longitude() {
@@ -129,7 +148,7 @@ mod tests {
 
     #[test]
     fn test_decimal_rounding() {
-        let coord = Coordinates::new(60.10002, 51.00056).unwrap();
+        let coord = LonLatAlt::new(51.00056, 60.10002, None).unwrap();
         assert_eq!(coord.latitude.value(), 60.1000);
         assert_eq!(coord.longitude.value(), 51.0006);
     }

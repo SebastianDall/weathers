@@ -1,5 +1,5 @@
 use clap::Parser;
-use weathers::domain::Coordinates;
+use weathers::domain::LonLatAlt;
 
 #[derive(Parser, Debug, Clone)]
 pub struct ForecastArgs {
@@ -9,5 +9,5 @@ pub struct ForecastArgs {
         required = true,
         help = "Coordinates to request weather data 'lat,lon'"
     )]
-    pub coordinates: Coordinates,
+    pub coordinates: LonLatAlt,
 }
