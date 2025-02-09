@@ -1,8 +1,9 @@
+use serde::Deserialize;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Context, Result};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct Longitude(f64);
 
 impl Longitude {
