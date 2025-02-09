@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use url::Url;
 
-use super::Coordinates;
+use super::LonLatAlt;
 
 enum YrReport {
     Compact,
@@ -15,6 +15,7 @@ pub struct Yr {
 
 #[derive(Deserialize, Debug)]
 pub struct ForecastResponse {
+    #[serde(rename = "type")]
     pub kind: String,
     pub geometry: Geometry,
     pub properties: Properties,
@@ -22,12 +23,14 @@ pub struct ForecastResponse {
 
 #[derive(Deserialize, Debug)]
 pub struct Geometry {
+    #[serde(rename = "type")]
     pub kind: String,
-    pub coordinates: Coordinates,
+    pub coordinates: LonLatAlt,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct Properties {
+    #[serde(rename = "type")]
     pub kind: Meta,
     pub timeseries: Vec<TimeSeries>,
 }
@@ -40,25 +43,33 @@ pub struct Meta {
 
 #[derive(Deserialize, Debug)]
 pub struct Units {
-    pub air_temperature_unit: String,
-
-    pub precipitation_amount_unit: String,
+    pub air_pressure_at_sea_level: String,
+    pub air_temperature: String,
+    pub cloud_area_fraction: String,
+    pub precipitation_amount: String,
+    pub relative_humidity: String,
+    pub wind_from_direction: String,
+    pub wind_speed: String,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct TimeSeries {
     pub time: String,
-
     pub data: Data,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct Data {
-    pub instant_details: InstantDetails,
+    pub instant: Instant,
 
     pub next_1_hours: Option<NextHours>,
     pub next_6_hours: Option<NextHours>,
     pub next_12_hours: Option<NextHours>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Instant {
+    pub details: InstantDetails,
 }
 
 #[derive(Deserialize, Debug)]
@@ -69,7 +80,6 @@ pub struct InstantDetails {
     pub air_temperature: f64,
     #[serde(rename = "cloud_area_fraction")]
     pub cloud_area_fraction: f64,
-    // ... skip or ignore the rest
     #[serde(rename = "relative_humidity")]
     pub relative_humidity: f64,
     #[serde(rename = "wind_from_direction")]
@@ -92,5 +102,5 @@ pub struct SymbolCode {
 #[derive(Debug, Deserialize)]
 pub struct PrecipitationDetails {
     #[serde(rename = "precipitation_amount")]
-    pub precipitation_amount: f64,
+    pub precipitation_amount: Option<f64>,
 }

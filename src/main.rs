@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
 use log::info;
 use std::fs;
@@ -18,7 +18,7 @@ async fn main() -> Result<()> {
 
     if !cache_dir.is_dir() {
         info!("Creating cache dir at: {:?}", &cache_dir);
-        fs::create_dir(cache_dir);
+        fs::create_dir(cache_dir).context("Could not create cache_dir: './cache'")?;
     }
 
     let args = Args::parse();

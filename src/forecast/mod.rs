@@ -5,6 +5,7 @@ use url::Url;
 
 pub mod forecastargs;
 pub use forecastargs::ForecastArgs;
+use weathers::domain::yr::ForecastResponse;
 
 pub async fn forecast(args: ForecastArgs) -> Result<()> {
     info!("Requested coordinates are: {:?}", args.coordinates);
@@ -25,8 +26,13 @@ pub async fn forecast(args: ForecastArgs) -> Result<()> {
         .await
         .context("Failed to send request")?;
 
-    let body = response.text().await.context("Failed to get response")?;
+    // let headers = response.headers().await.context("Failed to get response headers");
 
-    println!("body: {body:?}");
+    let body = response.text().await.context("Failed to get response")?;
+    println!("body: {}", &body);
+
+    let json: ForecastResponse = serde_json::from_str(&body)?;
+
+    println!("json: {json:#?}");
     Ok(())
 }
