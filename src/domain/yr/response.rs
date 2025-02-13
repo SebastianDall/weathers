@@ -1,20 +1,9 @@
 use serde::Deserialize;
-use url::Url;
 
 use super::LonLatAlt;
 
-enum YrReport {
-    Compact,
-    Complete,
-}
-
-pub struct Yr {
-    url: Url,
-    report_type: YrReport,
-}
-
 #[derive(Deserialize, Debug)]
-pub struct ForecastResponse {
+pub struct CompactForecastResponse {
     #[serde(rename = "type")]
     pub kind: String,
     pub geometry: Geometry,

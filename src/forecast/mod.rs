@@ -1,38 +1,30 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use log::info;
-use reqwest;
-use url::Url;
+use reqwest::{self, Client};
 
 pub mod forecastargs;
 pub use forecastargs::ForecastArgs;
-use weathers::domain::yr::ForecastResponse;
+use weathers::domain::yr::weatherapi::YrApi;
 
 pub async fn forecast(args: ForecastArgs) -> Result<()> {
     info!("Requested coordinates are: {:?}", args.coordinates);
 
-    let mut base_url = Url::parse("https://api.met.no/weatherapi/locationforecast/2.0/compact")?;
+    let yr = YrApi::new()?;
+    let client = Client::new();
 
-    base_url
-        .query_pairs_mut()
-        .append_pair("lat", &args.coordinates.latitude.value().to_string())
-        .append_pair("lon", &args.coordinates.longitude.value().to_string());
+    let json = yr.get_forecast(args.coordinates, client).await?;
 
-    let sitename = "weathers/0.1.0 (https://github.com/SebastianDall/weathers)";
-    let client = reqwest::Client::new();
-    let response = client
-        .get(base_url)
-        .header("User-Agent", sitename)
-        .send()
-        .await
-        .context("Failed to send request")?;
+    let symbol = &json.properties.timeseries[0]
+        .data
+        .next_1_hours
+        .as_ref()
+        .and_then(|next| next.summary.as_ref())
+        .map(|code| &code.symbol_code);
 
-    // let headers = response.headers().await.context("Failed to get response headers");
-
-    let body = response.text().await.context("Failed to get response")?;
-    println!("body: {}", &body);
-
-    let json: ForecastResponse = serde_json::from_str(&body)?;
-
-    println!("json: {json:#?}");
+    if let Some(sym) = symbol {
+        println!("The code is: {}", sym.to_string());
+    } else {
+        println!("No code available");
+    }
     Ok(())
 }
