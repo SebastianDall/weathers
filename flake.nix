@@ -15,22 +15,31 @@
       in {
         devShells.default = pkgs.mkShell {
           buildInputs = [
-            pkgs.openssl
-            pkgs.pkg-config
             pkgs.cargo
             pkgs.rustc
+            pkgs.linuxKernel.packages.linux_zen.perf
+            pkgs.cargo-cross
+            pkgs.cargo-release
+
+            # For building
+            pkgs.openssl_3_3
+            pkgs.clang
+            pkgs.pkg-config
           ];
-
-          shellHook = ''
-            # Point OPENSSL_DIR to the "dev" output (headers, etc.).
-            export OPENSSL_DIR=${pkgs.openssl.dev}
-
-            # Also ensure pkg-config sees the .pc files for OpenSSL
-            export PKG_CONFIG_PATH=${pkgs.openssl.dev}/lib/pkgconfig:$PKG_CONFIG_PATH
-
-            echo "OPENSSL_DIR  = $OPENSSL_DIR"
-            echo "PKG_CONFIG_PATH = $PKG_CONFIG_PATH"
-          '';
+        };
+        packages.default = pkgs.buildRustPackage {
+          src = ./.;
+          cargoLock = {
+            lockFile = ./Cargo.lock;
+          };
+          buildInputs = [
+              pkgs.openssl_3_3
+              pkgs.pkg-config
+          ];
+          nativeBuildInputs = [
+              pkgs.openssl_3_3
+              pkgs.pkg-config
+          ];
         };
     });
 }
