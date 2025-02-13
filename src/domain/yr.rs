@@ -30,8 +30,7 @@ pub struct Geometry {
 
 #[derive(Deserialize, Debug)]
 pub struct Properties {
-    #[serde(rename = "type")]
-    pub kind: Meta,
+    pub meta: Meta,
     pub timeseries: Vec<TimeSeries>,
 }
 
