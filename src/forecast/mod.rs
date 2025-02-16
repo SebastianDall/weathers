@@ -4,7 +4,7 @@ use reqwest::{self, Client};
 
 pub mod forecastargs;
 pub use forecastargs::ForecastArgs;
-use weathers::domain::yr::weatherapi::YrApi;
+use weathers::domain::yr::{response::YrForecastType, weatherapi::YrApi};
 
 pub async fn forecast(args: ForecastArgs) -> Result<()> {
     info!("Requested coordinates are: {:?}", args.coordinates);
@@ -12,19 +12,26 @@ pub async fn forecast(args: ForecastArgs) -> Result<()> {
     let yr = YrApi::new()?;
     let client = Client::new();
 
-    let json = yr.get_forecast(args.coordinates, client).await?;
+    let response = yr.get_forecast(args.coordinates, client).await?;
 
-    let symbol = &json.properties.timeseries[0]
-        .data
-        .next_1_hours
-        .as_ref()
-        .and_then(|next| next.summary.as_ref())
-        .map(|code| &code.symbol_code);
+    info!("Data expires: {}", &response.headers.expires);
 
-    if let Some(sym) = symbol {
-        println!("The code is: {}", sym.to_string());
-    } else {
-        println!("No code available");
+    match &response.forecast {
+        YrForecastType::CompactForecastResponse(cfr) => {
+            let symbol = &cfr.properties.timeseries[0]
+                .data
+                .next_1_hours
+                .as_ref()
+                .and_then(|next| next.summary.as_ref())
+                .map(|code| &code.symbol_code);
+
+            if let Some(sym) = symbol {
+                info!("The code is: {}", sym.to_string());
+            } else {
+                info!("No code available");
+            }
+        }
     }
+
     Ok(())
 }

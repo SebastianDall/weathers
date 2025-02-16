@@ -1,8 +1,63 @@
+use anyhow::{anyhow, Result};
+use chrono::prelude::*;
+use reqwest::header::HeaderMap;
 use serde::Deserialize;
 
 use super::LonLatAlt;
 
+fn parse_header_to_rfc2822(headers: &HeaderMap, key: &str) -> anyhow::Result<DateTime<Utc>> {
+    let value = headers
+        .get(key)
+        .ok_or_else(|| anyhow!("Missing key '{}' in headers", key))?;
+    let rfc2822 = value.to_str()?;
+
+    let utc = DateTime::parse_from_rfc2822(&rfc2822)?.with_timezone(&Utc);
+    Ok(utc)
+}
+#[derive(Debug)]
+pub struct YrResponseHeaders {
+    pub last_modified: DateTime<Utc>,
+    pub expires: DateTime<Utc>,
+}
+
+impl YrResponseHeaders {
+    pub fn from_headermap(headers: &HeaderMap) -> Result<Self> {
+        let last_modified = parse_header_to_rfc2822(headers, "last-modified")?;
+        let expires = parse_header_to_rfc2822(headers, "expires")?;
+
+        Ok(Self {
+            last_modified,
+            expires,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct YrResponseBody {
+    pub date_requested: DateTime<Utc>,
+    pub headers: YrResponseHeaders,
+    pub forecast: YrForecastType,
+}
+
+impl YrResponseBody {
+    pub fn new(headers: YrResponseHeaders, forecast: YrForecastType) -> Self {
+        let datetime: DateTime<Utc> = Utc::now();
+
+        Self {
+            date_requested: datetime,
+            headers,
+            forecast,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum YrForecastType {
+    CompactForecastResponse(CompactForecastResponse),
+}
+
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct CompactForecastResponse {
     #[serde(rename = "type")]
     pub kind: String,
@@ -42,7 +97,7 @@ pub struct Units {
 
 #[derive(Deserialize, Debug)]
 pub struct TimeSeries {
-    pub time: String,
+    pub time: DateTime<Utc>,
     pub data: Data,
 }
 

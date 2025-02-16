@@ -1,10 +1,11 @@
 use anyhow::{Context, Result};
+use chrono::Utc;
 use reqwest::Client;
 use url::Url;
 
-use crate::domain::LonLatAlt;
+use crate::domain::{yr::response::CompactForecastResponse, LonLatAlt};
 
-use super::response::CompactForecastResponse;
+use super::response::{YrForecastType, YrResponseBody, YrResponseHeaders};
 
 pub struct YrApi {
     url: Url,
@@ -19,11 +20,7 @@ impl YrApi {
         Ok(Self { url, sitename })
     }
 
-    pub async fn get_forecast(
-        self,
-        coords: LonLatAlt,
-        client: Client,
-    ) -> Result<CompactForecastResponse> {
+    pub async fn get_forecast(self, coords: LonLatAlt, client: Client) -> Result<YrResponseBody> {
         let mut query = self.url;
         query
             .query_pairs_mut()
@@ -37,13 +34,23 @@ impl YrApi {
             .await
             .context("Failed to send request")?;
 
-        // let headers = response.headers().await.context("Failed to get response headers");
+        let headers = YrResponseHeaders::from_headermap(response.headers())?;
 
         let body = response.text().await.context("Failed to get response")?;
+        let compact_forecast: CompactForecastResponse =
+            serde_json::from_str(&body).with_context(|| {
+                format!(
+                    "Could not parse response to CompactForecastResponse: {}",
+                    &body
+                )
+            })?;
 
-        let json: CompactForecastResponse =
-            serde_json::from_str(&body).context("Unable to parse request to json")?;
+        let forecast = YrForecastType::CompactForecastResponse(compact_forecast);
 
-        Ok(json)
+        Ok(YrResponseBody {
+            date_requested: Utc::now(),
+            headers,
+            forecast,
+        })
     }
 }
